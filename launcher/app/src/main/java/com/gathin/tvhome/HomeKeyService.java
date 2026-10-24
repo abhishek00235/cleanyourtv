@@ -144,10 +144,15 @@ public class HomeKeyService extends AccessibilityService {
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         // A scancode entry is more specific than any keycode, so it goes first.
-        if (RemoteKeys.handle(this, event, appScancodes.get(event.getScanCode()),
-                holdAppScancodes.get(event.getScanCode()))) return true;
+        String scancodeApp = appScancodes.get(event.getScanCode());
+        String holdScancodeApp = holdAppScancodes.get(event.getScanCode());
+        if ((scancodeApp != null && !KidsMode.allowsRemoteAction(this, scancodeApp))
+                || (holdScancodeApp != null && !KidsMode.allowsRemoteAction(this, holdScancodeApp))) return true;
+        if (RemoteKeys.handle(this, event, scancodeApp,
+                holdScancodeApp)) return true;
         // The stock launcher handled the remote's Settings button; with it disabled the button does nothing.
         if (isSettingsKey(event)) {
+            if (KidsMode.enabled(this)) return true;
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
                 Intent open = settingsPanel ? new Intent(this, QuickSettingsActivity.class)
                         : SystemSettings.intent(this, Settings.ACTION_SETTINGS);
@@ -159,8 +164,12 @@ public class HomeKeyService extends AccessibilityService {
             }
             return true;
         }
-        if (RemoteKeys.handle(this, event, appKeys.get(event.getKeyCode()),
-                holdAppKeys.get(event.getKeyCode()))) return true;
+        String keyApp = appKeys.get(event.getKeyCode());
+        String holdKeyApp = holdAppKeys.get(event.getKeyCode());
+        if ((keyApp != null && !KidsMode.allowsRemoteAction(this, keyApp))
+                || (holdKeyApp != null && !KidsMode.allowsRemoteAction(this, holdKeyApp))) return true;
+        if (RemoteKeys.handle(this, event, keyApp,
+                holdKeyApp)) return true;
         if (event.getKeyCode() == KeyEvent.KEYCODE_HOME && !stockHome.isEmpty()) {
             redirectHomeKey(event);
             return false;

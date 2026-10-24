@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
@@ -13,17 +15,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
 public final class LauncherSettingsActivity extends Activity {
     static final String EXTRA_REORDER = "com.gathin.tvhome.extra.REORDER_FROM_SETTINGS";
+    static final String EXTRA_START_KIDS = "com.gathin.tvhome.extra.START_KIDS";
     private SharedPreferences choices;
     private final TextView[] columnChoices = new TextView[4];
     private final TextView[] rowChoices = new TextView[4];
     private static final int[] DOCK_OPACITIES = {100, 70, 50, 30};
     private final TextView[] dockChoices = new TextView[DOCK_OPACITIES.length];
     private TextView wallpaperChoice;
+    private TextView themeChoice;
+    private TextView kidsModeChoice;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -96,6 +107,21 @@ public final class LauncherSettingsActivity extends Activity {
         }
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
+        themeChoice = findViewById(R.id.themeChoice);
+        List<String> installedThemes = ThemeCatalog.installed(this);
+        themeChoice.setVisibility(installedThemes.isEmpty() ? View.GONE : View.VISIBLE);
+        themeChoice.setOnClickListener(v -> showThemePicker());
+        findViewById(R.id.adBlockingChoice).setOnClickListener(v ->
+                open(SystemSettings.intent(this, Settings.ACTION_WIFI_SETTINGS)));
+        kidsModeChoice = findViewById(R.id.kidsModeChoice);
+        kidsModeChoice.setOnClickListener(v -> {
+            if (KidsMode.enabled(this)) {
+                KidsMode.disable(this);
+                changed();
+                refresh();
+            }
+            else showKidsAppPicker();
+        });
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -142,6 +168,10 @@ public final class LauncherSettingsActivity extends Activity {
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+        if (getIntent().getBooleanExtra(EXTRA_START_KIDS, false)) {
+            getIntent().removeExtra(EXTRA_START_KIDS);
+            showKidsAppPicker();
+        }
     }
 
     private void reverseRow(TextView[] views) {
@@ -184,6 +214,94 @@ public final class LauncherSettingsActivity extends Activity {
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    private void showThemePicker() {
+        List<String> themes = ThemeCatalog.installed(this);
+        String[] labels = new String[themes.size()];
+        for (int i = 0; i < themes.size(); i++) labels[i] = ThemeCatalog.label(themes.get(i));
+        int checked = ThemeCatalog.currentIndex(this, themes);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.theme_picker_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    String selected = themes.get(which);
+                    try {
+                        ThemeCatalog.apply(this, selected);
+                        dialog.dismiss();
+                        setResult(RESULT_OK);
+                        Toast.makeText(this, getString(R.string.theme_applied, ThemeCatalog.label(selected)),
+                                Toast.LENGTH_SHORT).show();
+                        finish();
+                    } catch (IOException e) {
+                        Toast.makeText(this, R.string.theme_apply_failed, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private static final class KidsApp {
+        final String packageName;
+        final String label;
+        KidsApp(String packageName, String label) {
+            this.packageName = packageName;
+            this.label = label;
+        }
+    }
+
+    private void showKidsAppPicker() {
+        PackageManager pm = getPackageManager();
+        Set<String> seen = new HashSet<>();
+        List<KidsApp> apps = new ArrayList<>();
+        for (String category : new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
+            Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(category);
+            for (ResolveInfo info : pm.queryIntentActivities(intent, 0)) {
+                if (info.activityInfo == null) continue;
+                String pkg = info.activityInfo.packageName;
+                if (pkg.equals(getPackageName()) || !seen.add(pkg)) continue;
+                String label = Cards.cleanLabel(String.valueOf(info.loadLabel(pm)), pkg);
+                apps.add(new KidsApp(pkg, label));
+            }
+        }
+        Collections.sort(apps, Comparator.comparing((KidsApp app) -> app.label, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(app -> app.packageName));
+        if (apps.isEmpty()) {
+            Toast.makeText(this, R.string.kids_mode_no_apps, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String[] labels = new String[apps.size()];
+        boolean[] checked = new boolean[apps.size()];
+        Set<String> selected = KidsMode.allowedPackages(this);
+        for (int i = 0; i < apps.size(); i++) {
+            KidsApp app = apps.get(i);
+            labels[i] = app.label;
+            checked[i] = selected.contains(app.packageName);
+        }
+        AlertDialog picker = new AlertDialog.Builder(this)
+                .setTitle(R.string.kids_mode_choose_apps)
+                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
+                    if (isChecked) selected.add(apps.get(which).packageName);
+                    else selected.remove(apps.get(which).packageName);
+                })
+                .setPositiveButton(R.string.kids_mode_open, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        picker.setOnShowListener(ignored -> picker.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            if (selected.isEmpty()) {
+                Toast.makeText(this, R.string.kids_mode_select_one, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!KidsMode.enable(this, selected)) {
+                Toast.makeText(this, R.string.kids_mode_save_failed, Toast.LENGTH_LONG).show();
+                return;
+            }
+            picker.dismiss();
+            changed();
+            Toast.makeText(this, R.string.kids_mode_enabled, Toast.LENGTH_SHORT).show();
+            finish();
+        }));
+        picker.show();
     }
 
     private static int indexOf(List<File> images, String name) {
@@ -233,6 +351,8 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         followThemeChoice.setSelected(!hasOnTvChoices());
+        kidsModeChoice.setText(getString(R.string.kids_mode_state,
+                getString(KidsMode.enabled(this) ? R.string.on : R.string.off)));
     }
 
     private boolean hasOnTvChoices() {

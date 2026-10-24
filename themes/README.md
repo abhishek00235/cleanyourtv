@@ -1,5 +1,27 @@
 # Themes
 
+## On-TV theme picker (Windows)
+
+The launcher can switch among all installed theme packs from **Launcher settings → Choose theme**. From the
+repository root, install the catalog with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/theme.ps1 -TvHost <tv-ip>:5555 -InstallCatalog
+```
+
+This copies the official theme configs and wallpaper files into the launcher's app data and leaves the currently
+active theme in place. The picker appears after the launcher is restarted. Selecting a pack applies its layout and
+wallpapers and clears on-TV overrides, just like following a pushed theme.
+
+Remove the catalog while keeping the active theme with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/theme.ps1 -TvHost <tv-ip>:5555 -ClearCatalog
+```
+
+`-Reset` still resets the active theme to the launcher's built-in settings and keeps any installed catalog. To
+restore the previous launcher build, reinstall the saved APK with `adb install -r backup\pre-theme-picker-release.apk`.
+
 A theme is a folder with a `config.json` and, optionally, a picture: a `wallpaper.jpg` or a `wallpapers/`
 collection. Pushing one changes the launcher's dock, layout and look on the TV without rebuilding the
 APK: the launcher reads `config.json` as an overlay over its built-in `config.xml` the next time it starts.
@@ -18,6 +40,7 @@ powershell -ExecutionPolicy Bypass -File tools\theme.ps1 -TvHost 192.168.1.50 th
 | `aurora/` | A dark aurora wallpaper (teal and violet on navy, darker at the bottom) with a matching background colour | <img src="aurora/screenshot.jpg" width="320" alt="aurora theme"> |
 | `dussehra/` | Festive skin for Dussehra (ends 21 Oct 2026): a marigold toran, a faint gold rangoli, a diya for Wi-Fi, a bell for Inputs, a marigold for Settings and a petal shower | <img src="dussehra/screenshot.jpg" width="320" alt="dussehra theme"> |
 | `glass/` | Dark navy wallpaper with soft teal and violet light, the cinematic top shelf, a frosted-glass dock, icon-only buttons and the focus glow in the app's colour, gliding without overshoot | <img src="glass/screenshot.jpg" width="320" alt="glass theme"> |
+| `cinematic-sunset/` | A cinematic sunset over a lake with a frosted-glass dock, icon-only header, and the installed streaming apps | <img src="cinematic-sunset/screenshot.jpg" width="320" alt="cinematic sunset theme"> |
 | `ruska/` | A Finnish autumn ("ruska") dusk over a lake: spruce shoreline, birches in autumn colour, a few falling leaves, drawn in code by `make_wallpaper.py`. The app-colour glow stays off the picture so the autumn colours keep their own light; the dock is 70% opaque so the lake shows through, and the focus glows in the app's colour without overshoot | <img src="ruska/screenshot.jpg" width="320" alt="ruska theme"> |
 | `scenes/` | 14 dark illustrated landscapes in `wallpapers/`, a new one every hour; drawn from code by `tools/scenes_wallpapers.py` | <img src="scenes/screenshot.jpg" width="320" alt="scenes theme"> |
 | `six-columns/` | Six smaller tiles per row and one grid row visible under the dock | <img src="six-columns/screenshot.jpg" width="320" alt="six-columns theme"> |

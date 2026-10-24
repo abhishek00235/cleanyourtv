@@ -1,0 +1,30 @@
+{
+    "library_button":  true,
+    "app_glow":  true,
+    "cinematic_art":  0,
+    "icon_only_buttons":  true,
+    "dock_apps":  [
+                      "com.google.android.youtube.tv",
+                      "com.netflix.ninja",
+                      "com.amazon.amazonvideo.livingroom",
+                      "in.startv.hotstar"
+                  ],
+    "ambient_glow":  false,
+    "columns":  4,
+    "dock_even_padding":  true,
+    "dock_opacity":  48,
+    "cinematic_scrim":  30,
+    "dock_glass":  true,
+    "cinematic_home":  true,
+    "always_show_names":  false,
+    "wallpaper":  true,
+    "dock_title":  false,
+    "icon_only_inputs":  true,
+    "background_color":  "#160E20",
+    "rows_below_dock":  0,
+    "wallpaper_dim":  8,
+    "focus_overshoot":  false,
+    "reduced_motion":  false,
+    "app_library":  true,
+    "cinematic_dots":  false
+}

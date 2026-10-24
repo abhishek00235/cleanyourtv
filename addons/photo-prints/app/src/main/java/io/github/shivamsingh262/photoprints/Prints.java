@@ -29,8 +29,8 @@ import java.util.concurrent.Executors;
  * The scene both the screensaver (PrintsDream) and the card's slideshow (SlideshowActivity) show: the owner's
  * photos as three prints on a time-of-day sky, each the whole photo with rounded corners and its month and year
  * written on it, above a line with the time and the date. Every 15 seconds the three slide off to the left one
- * after another and three new ones are dealt in from the right, each at a slight tilt. With no photos it shows
- * where to put them. No network: nothing leaves the TV.
+ * after another and three new ones are dealt in from the right, each at a slight tilt. It mixes the owner's local
+ * photos with a small cached set of credited Pixabay landscapes when the TV has an internet connection.
  */
 final class Prints {
 
@@ -62,7 +62,9 @@ final class Prints {
     private final View[] cards = new View[PRINTS];
     private final ImageView[] photoViews = new ImageView[PRINTS];
     private final TextView[] dateViews = new TextView[PRINTS];
+    private final TextView[] creditViews = new TextView[PRINTS];
     private ExecutorService loader;
+    private ExecutorService refresher;
     /** Loader thread only. */
     private final List<File> queue = new ArrayList<>();
     private boolean dealt;
@@ -73,9 +75,17 @@ final class Prints {
     private static final class Print {
         Bitmap bitmap;
         String date;
+        String credit;
     }
 
     private final Runnable next = this::loadNext;
+    private final Runnable refresh = new Runnable() {
+        @Override
+        public void run() {
+            refreshOnline();
+            handler.postDelayed(this, 24L * 60L * 60L * 1000L);
+        }
+    };
 
     /** {@code root} is R.layout.prints, already inflated. */
     Prints(Context context, View root) {
@@ -96,6 +106,7 @@ final class Prints {
             cards[i].findViewById(R.id.printCard).setClipToOutline(true);   // the photo takes the rounded corners
             photoViews[i] = cards[i].findViewById(R.id.printPhoto);
             dateViews[i] = cards[i].findViewById(R.id.printDate);
+            creditViews[i] = cards[i].findViewById(R.id.printCredit);
             cards[i].setTranslationX(screenW * 2f);   // off screen until the first deal
             stage.addView(cards[i]);
         }
@@ -104,7 +115,35 @@ final class Prints {
 
     void start() {
         if (loader == null) loader = Executors.newSingleThreadExecutor();
+        if (refresher == null) refresher = Executors.newSingleThreadExecutor();
+        handler.post(refresh);
         handler.post(next);
+    }
+
+    void refreshNow() {
+        refreshOnline();
+    }
+
+    private void refreshOnline() {
+        final int gen = generation;
+        final ExecutorService currentLoader = loader;
+        final ExecutorService currentRefresher = refresher;
+        if (currentLoader == null || currentRefresher == null) return;
+        currentRefresher.execute(() -> {
+            if (!OnlinePhotos.refreshIfDue(context) || currentLoader.isShutdown()) return;
+            try {
+                currentLoader.execute(() -> {
+                    queue.clear();
+                    handler.post(() -> {
+                        if (gen != generation || loader != currentLoader) return;
+                        handler.removeCallbacks(next);
+                        handler.post(next);
+                    });
+                });
+            } catch (RuntimeException ignored) {
+                // The screensaver or slideshow may have closed while the download completed.
+            }
+        });
     }
 
     void stop() {
@@ -117,6 +156,8 @@ final class Prints {
         stop();
         if (loader != null) loader.shutdownNow();
         loader = null;
+        if (refresher != null) refresher.shutdownNow();
+        refresher = null;
         for (ImageView v : photoViews) release(v);
     }
 
@@ -174,6 +215,7 @@ final class Prints {
             Print p = new Print();
             p.bitmap = bitmap;
             p.date = Photos.dateOf(file);
+            p.credit = Photos.credit(file);
             return p;
         }
         return null;
@@ -247,6 +289,11 @@ final class Prints {
             photo.setLayoutParams(lp);
             dateViews[i].setText(p.date);
             dateViews[i].setVisibility(p.date.isEmpty() ? View.GONE : View.VISIBLE);
+            creditViews[i].setText(p.credit == null ? "" : p.credit);
+            creditViews[i].setVisibility(p.credit == null || p.credit.isEmpty() ? View.GONE : View.VISIBLE);
+            ViewGroup.LayoutParams creditParams = creditViews[i].getLayoutParams();
+            creditParams.width = pw;
+            creditViews[i].setLayoutParams(creditParams);
             // The caption's fade spans the photo: set outright, since a FrameLayout with one match_parent child
             // keeps that child's width from the last measure, the previous photo's.
             ViewGroup.LayoutParams dp = dateViews[i].getLayoutParams();

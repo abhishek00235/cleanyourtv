@@ -1,0 +1,10 @@
+{
+  "wallpaper": true,
+  "wallpaper_dim": 8,
+  "background_color": "#11163B",
+  "columns": 4,
+  "rows_below_dock": 0,
+  "dock_opacity": 70,
+  "always_show_names": true,
+  "reduced_motion": false
+}

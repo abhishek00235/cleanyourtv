@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No permissions: the photos are read from this app's own folder, and nothing goes over the network. -->
+<!-- Photos stay on-device. INTERNET is used only for Pixabay's image search and downloads. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />

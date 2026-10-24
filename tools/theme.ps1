@@ -6,6 +6,8 @@
 param(
     [Parameter(Position = 0)][string]$Theme,
     [switch]$Reset,
+    [switch]$InstallCatalog,
+    [switch]$ClearCatalog,
     [string]$TvHost = $env:TV_HOST
 )
 $ErrorActionPreference = 'Stop'
@@ -57,6 +59,46 @@ $clearWallpapers = "mkdir -p $dir/wallpapers 2>/dev/null; rm -f $dir/wallpapers/
 
 if ($Reset) {
     & $py -I tv.py "mkdir -p $dir 2>/dev/null; $(Drop 'config.json'); $(Drop 'wallpaper.jpg'); $(Drop 'wallpapers/captions.txt'); $clearWallpapers; printf '%s' '$revision' > $tmp-theme_revision; $(Put 'theme_revision'); $restart; echo reset"
+    exit 0
+}
+if ($ClearCatalog) {
+    & $py -I tv.py "rm -rf $dir/theme-packs; $restart; echo catalog-cleared"
+    Write-Host 'Removed the on-device theme catalog.'
+    exit 0
+}
+if ($InstallCatalog) {
+    $themesRoot = Join-Path (Split-Path $PSScriptRoot -Parent) 'themes'
+    $packs = Get-ChildItem $themesRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'config.json') }
+    if (-not $packs) { throw "no theme packs found in $themesRoot" }
+    & $py -I tv.py "mkdir -p $dir/theme-packs 2>/dev/null" | Out-Null
+    foreach ($pack in $packs) {
+        $id = $pack.Name
+        if ($id -notmatch '^[a-z0-9-]+$') { throw "unsupported theme id: $id" }
+        $config = Join-Path $pack.FullName 'config.json'
+        try { Get-Content $config -Raw | ConvertFrom-Json | Out-Null } catch { throw "$config is not valid JSON" }
+        & $py -I tv.py "mkdir -p $dir/theme-packs/$id 2>/dev/null" | Out-Null
+        & $py -I tv.py --push $config (Stage "theme-packs/$id/config.json") | Out-Null
+        & $py -I tv.py (Put "theme-packs/$id/config.json") | Out-Null
+        $packedWallpapers = Join-Path $pack.FullName 'wallpapers'
+        & $py -I tv.py "mkdir -p $dir/theme-packs/$id/wallpapers 2>/dev/null; rm -f $dir/theme-packs/$id/wallpapers/*.jpg $dir/theme-packs/$id/wallpapers/*.jpeg $dir/theme-packs/$id/wallpapers/*.png $dir/theme-packs/$id/wallpapers/*.webp $dir/theme-packs/$id/wallpapers/*.JPG $dir/theme-packs/$id/wallpapers/*.JPEG $dir/theme-packs/$id/wallpapers/*.PNG $dir/theme-packs/$id/wallpapers/*.WEBP; content delete --uri $uri/theme-packs/$id/wallpapers 2>/dev/null" | Out-Null
+        $single = Join-Path $pack.FullName 'wallpaper.jpg'
+        if (Test-Path $single) {
+            & $py -I b64push.py $single (Stage "theme-packs/$id/wallpaper.jpg") | Out-Null
+            & $py -I tv.py (Put "theme-packs/$id/wallpaper.jpg") | Out-Null
+        } else { & $py -I tv.py (Drop "theme-packs/$id/wallpaper.jpg") | Out-Null }
+        if (Test-Path $packedWallpapers -PathType Container) {
+            Get-ChildItem $packedWallpapers -File | Where-Object { $_.Extension -match '^\.(jpg|jpeg|png|webp)$' -or $_.Name -eq 'captions.txt' } | ForEach-Object {
+                if ($_.Name -eq 'captions.txt') { $relative = "theme-packs/$id/wallpapers/captions.txt" }
+                elseif ($_.Name -match '^[A-Za-z0-9_.-]+\.(jpg|jpeg|png|webp)$') { $relative = "theme-packs/$id/wallpapers/$($_.Name)" }
+                else { throw "unsupported wallpaper filename: $($_.Name)" }
+                & $py -I b64push.py $_.FullName (Stage $relative) | Out-Null
+                & $py -I tv.py (Put $relative) | Out-Null
+            }
+        }
+        Write-Host "Installed catalog pack: $id"
+    }
+    & $py -I tv.py "$restart; echo catalog-installed" | Out-Null
+    Write-Host "Installed $($packs.Count) theme packs; current theme was left in place."
     exit 0
 }
 if (-not $Theme) { throw 'usage: theme.ps1 <theme folder> | -Reset' }

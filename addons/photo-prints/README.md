@@ -1,9 +1,16 @@
 # Photo Prints
 
-Your own photos as a screensaver: three prints on a time-of-day sky, each the whole photo (never cropped) with
-rounded corners and the month and year it was taken. Every 15 seconds they slide off to the left one after
-another and three new ones are dealt in from the right, each at a slight tilt. A line along the bottom shows the
-time and the date, and moves a little at each sweep so it does not burn in.
+Your own photos and free Pixabay landscapes as a screensaver: three prints on a time-of-day sky, each the whole
+photo (never cropped) with rounded corners. Every 15 seconds they slide off to the left one after another and
+three new ones are dealt in from the right, each at a slight tilt. A line along the bottom shows the time and the
+date, and moves a little at each sweep so it does not burn in.
+
+When the TV is online, Photo Prints searches [Pixabay](https://pixabay.com/) for landscape images and refreshes its
+local cache every 24 hours (Pixabay's required cache period). It keeps up to eight images at a time; the prints
+still rotate every 15 seconds. Add a free Pixabay API key the first time the card opens; the key is stored in this
+app's private preferences on the TV, not in the repository. Press MENU while the slideshow is open to change it.
+Each online print identifies Pixabay and its contributor. Images are downloaded into the TV's private cache, so
+the slideshow continues offline and keeps the previous cache if a refresh fails. Personal photos are never uploaded.
 
 On cleanyourtv's Home it is also a module card, **Photo Prints**: press OK on it to start the same slideshow at
 once, and Back to leave.
@@ -14,9 +21,8 @@ once, and Back to leave.
 
 ## Permissions
 
-None. The app reads photos from its own folder on the TV, which needs no permission, and has no network access
-(no `INTERNET` permission): nothing leaves the TV. No background service: it runs only while the screensaver or
-the slideshow is on screen.
+The app reads personal photos from its own folder on the TV, which needs no storage permission. `INTERNET` is used only to search Pixabay and download landscape images; personal photos are never uploaded. No
+background service: refresh runs only when the screensaver or slideshow is opened, at most once every 24 hours.
 
 ## Build and install
 
@@ -45,6 +51,10 @@ Any `jpg`, `jpeg`, `png` or `webp` copied into that folder by other means works 
 `something-20231202.jpg`, gives the print its date; otherwise the camera's own date is used when the photo has
 one, and the print shows no date when it has neither. Photos added while the TV is on show up at the next sweep.
 With no photos, the screen shows the folder to copy them into.
+
+Online images are stored separately from personal photos in the app's cache. Clear **Cache** for Photo Prints in
+Android Settings to remove the online copies; the app fetches a fresh set next time it opens. Your own photos in
+`files/photos` remain separate.
 
 `photos.sh` and `adb push` were tested on the Sony above, where the app reads files the shell copies into its
 folder. Some firmware does not allow that (#921 found files copied this way unreadable on a TCL G10); there, the

@@ -94,6 +94,32 @@
             android:layout_marginTop="28dp" />
 
         <TextView
+            android:id="@+id/themeChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp"
+            android:text="@string/theme_picker_title"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/adBlockingChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp"
+            android:text="@string/ad_blocking_choice" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:text="@string/ad_blocking_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/kidsModeChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
             android:id="@+id/animationsChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="28dp" />

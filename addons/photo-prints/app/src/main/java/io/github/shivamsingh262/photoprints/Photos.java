@@ -6,7 +6,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The owner's photos: the files in this app's own folder on the TV, where photos.sh (or adb push) puts them,
- * /sdcard/Android/data/io.github.shivamsingh262.photoprints/files/photos. Writing there needs no permission, and
- * the app reads its own folder without one.
+ * The owner's photos plus Openverse's cached images. Local pictures stay in the app's external files folder;
+ * downloaded images and their credits are kept separately in the app's private files folder.
  */
 final class Photos {
 
@@ -36,15 +39,32 @@ final class Photos {
         return new File(c.getExternalFilesDir(null), DIR);
     }
 
-    /** The photo files, read again on every call so photos pushed while the TV is on show up. */
+    /** The photo files, read again on every call so local photos and freshly downloaded images appear. */
     static List<File> list(Context c) {
         List<File> out = new ArrayList<>();
-        File[] files = folder(c).listFiles();
-        if (files == null) return out;
-        for (File f : files) {
-            if (f.isFile() && isImage(f.getName())) out.add(f);
-        }
+        addImages(out, folder(c));
+        addImages(out, OnlinePhotos.folder(c));
         return out;
+    }
+
+    private static void addImages(List<File> out, File folder) {
+        File[] files = folder == null ? null : folder.listFiles();
+        if (files == null) return;
+        for (File f : files) if (f.isFile() && isImage(f.getName())) out.add(f);
+    }
+
+    /** Attribution supplied by Openverse for downloaded images; local photos have no credit line. */
+    static String credit(File image) {
+        File parent = image.getParentFile();
+        if (parent == null) return null;
+        File sidecar = new File(parent, image.getName() + ".credit");
+        if (!sidecar.isFile()) return null;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new FileInputStream(sidecar), StandardCharsets.UTF_8))) {
+            return reader.readLine();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     static boolean isImage(String name) {

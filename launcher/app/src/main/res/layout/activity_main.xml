@@ -338,11 +338,20 @@
                     android:nextFocusDown="@+id/grid" />
 
                 <TextView
+                    android:id="@+id/btnKids"
+                    style="@style/TopButton"
+                    android:text="@string/kids_mode_button"
+                    android:drawableStart="@drawable/ic_kids"
+                    android:drawableTint="#FFFFD166"
+                    android:nextFocusDown="@+id/grid" />
+
+                <TextView
                     android:id="@+id/btnSettings"
                     style="@style/TopButton"
                     android:text="@string/settings"
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />
+
             </LinearLayout>
         </RelativeLayout>
 
@@ -351,6 +360,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:layout_marginTop="10dp">
 
             <androidx.recyclerview.widget.RecyclerView
@@ -366,6 +377,7 @@
                 android:overScrollMode="never"
                 android:scrollbars="none"
                 android:descendantFocusability="afterDescendants" />
+
         </FrameLayout>
     </LinearLayout>
 
@@ -376,4 +388,5 @@
         android:layout_height="10dp"
         android:alpha="0"
         android:importantForAccessibility="no" />
+
 </FrameLayout>

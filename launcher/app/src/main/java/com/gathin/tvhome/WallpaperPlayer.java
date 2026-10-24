@@ -63,7 +63,7 @@ final class WallpaperPlayer {
 
     WallpaperPlayer(Context context, FrameLayout root, Config config) {
         this.root = root;
-        files = new ArrayList<>(config.wallpapers);
+        files = KidsMode.enabled(context) ? new ArrayList<>() : new ArrayList<>(config.wallpapers);
         interval = config.wallpaperRotationMinutes * 60_000L;
         bitmapConfig = config.wallpaperTrueColor ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         // The dim is painted into the picture (decode), so no full-screen shade layer is drawn on every frame.

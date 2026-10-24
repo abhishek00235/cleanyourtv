@@ -60,10 +60,17 @@ public class InputKeyService extends AccessibilityService {
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         // A scancode entry is more specific than any keycode, so it goes first.
-        if (RemoteKeys.handle(this, event, appScancodes.get(event.getScanCode()),
-                holdAppScancodes.get(event.getScanCode()))) return true;
-        if (RemoteKeys.handle(this, event, appKeys.get(event.getKeyCode()),
-                holdAppKeys.get(event.getKeyCode()))) return true;
+        String scanApp = appScancodes.get(event.getScanCode());
+        String holdScanApp = holdAppScancodes.get(event.getScanCode());
+        if ((scanApp != null && !KidsMode.allowsRemoteAction(this, scanApp))
+                || (holdScanApp != null && !KidsMode.allowsRemoteAction(this, holdScanApp))) return true;
+        if (RemoteKeys.handle(this, event, scanApp, holdScanApp)) return true;
+        String keyApp = appKeys.get(event.getKeyCode());
+        String holdKeyApp = holdAppKeys.get(event.getKeyCode());
+        if ((keyApp != null && !KidsMode.allowsRemoteAction(this, keyApp))
+                || (holdKeyApp != null && !KidsMode.allowsRemoteAction(this, holdKeyApp))) return true;
+        if (RemoteKeys.handle(this, event, keyApp, holdKeyApp)) return true;
+        if (KidsMode.enabled(this) && isInputKey(event.getKeyCode())) return true;
         if (!isInputKey(event.getKeyCode())) return false;
         if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
             try {

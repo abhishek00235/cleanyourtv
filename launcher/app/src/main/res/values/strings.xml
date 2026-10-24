@@ -54,6 +54,32 @@
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>
+    <string name="theme_picker_title">Choose theme</string>
+    <string name="theme_applied">Theme applied: %1$s</string>
+    <string name="theme_apply_failed">Could not apply this theme. Try selecting it again.</string>
+    <string name="kids_mode_state" translatable="false">Kids Mode: %1$s</string>
+    <string name="kids_mode_button" translatable="false">Kids Zone</string>
+    <string name="kids_mode_exit_button" translatable="false">Exit Kids</string>
+    <string name="kids_mode_open" translatable="false">Open Kids Zone</string>
+    <string name="kids_mode_parents" translatable="false">Parents</string>
+    <string name="kids_mode_greeting" translatable="false">KIDS CLUB</string>
+    <string name="kids_mode_choose_apps" translatable="false">Choose apps for Kids Mode</string>
+    <string name="kids_mode_choose_apps_hint" translatable="false">Only the apps you check appear on Home. Choose apps you trust for your children.</string>
+    <string name="kids_mode_no_apps" translatable="false">No apps are available to add.</string>
+    <string name="kids_mode_select_one" translatable="false">Select at least one app.</string>
+    <string name="kids_mode_set_pin" translatable="false">Set parent PIN</string>
+    <string name="kids_mode_set_pin_hint" translatable="false">Choose 4 to 8 digits. You will need this PIN to leave Kids Mode.</string>
+    <string name="kids_mode_pin_length" translatable="false">Enter 4 to 8 digits.</string>
+    <string name="kids_mode_confirm_pin" translatable="false">Confirm parent PIN</string>
+    <string name="kids_mode_pin_mismatch" translatable="false">The PINs do not match.</string>
+    <string name="kids_mode_enabled" translatable="false">Kids Mode is ready.</string>
+    <string name="kids_mode_save_failed" translatable="false">Could not save Kids Mode settings.</string>
+    <string name="kids_mode_parent_pin" translatable="false">Parent check</string>
+    <string name="kids_mode_parent_pin_hint" translatable="false">Enter the parent PIN to return to the full Home screen.</string>
+    <string name="kids_mode_pin_hint_short" translatable="false">Parent PIN</string>
+    <string name="kids_mode_pin_incorrect" translatable="false">That PIN did not match.</string>
+    <string name="kids_mode_exit" translatable="false">Exit Kids Mode</string>
+    <string name="next" translatable="false">Next</string>
     <string name="animations_state">Animations: %1$s</string>
     <string name="advanced_effects">Advanced effects</string>
     <string name="advanced_effects_state">Advanced effects: %1$s</string>
@@ -145,4 +171,6 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+    <string name="ad_blocking_choice">Ad blocking (Private DNS)</string>
+    <string name="ad_blocking_hint">Opens Network &amp; Internet. A filtering DNS can block many known ad domains, but it cannot remove every ad, including YouTube ads.</string>
 </resources>

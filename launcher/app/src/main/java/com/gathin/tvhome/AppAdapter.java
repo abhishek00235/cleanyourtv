@@ -221,7 +221,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.animations = cfg.animations;
         this.advancedEffects = cfg.animations && cfg.advancedEffects;
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
-        this.showLibrary = cfg.appLibrary;
+        // The top-bar launcher is the single Library entry point when it is configured; adding a
+        // second full-width grid pill below a bottom-anchored dock can put it off screen.
+        this.showLibrary = cfg.appLibrary && !cfg.libraryButton && !KidsMode.enabled(ctx);
         this.reducedMotion = cfg.reducedMotion;
         this.focusOvershoot = cfg.focusOvershoot;
         this.rowsBelowDock = cfg.rowsBelowDock;
@@ -264,6 +266,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
+        boolean kidsMode = KidsMode.enabled(ctx);
+        Set<String> kidsAllowed = kidsMode ? KidsMode.allowedPackages(ctx) : Collections.emptySet();
         List<Entry> fresh = new ArrayList<>();
         // Some system apps declare two leanback entry points under one name (Sony's Timers & Clock on the
         // BRAVIA VU31), which would show as two identical tiles: keep the first per package and label.
@@ -272,6 +276,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
             if (pkg.equals(ctx.getPackageName()) || !ri.activityInfo.exported
+                    || (kidsMode && !kidsAllowed.contains(pkg))
                     || !LibraryApps.visible(tvPackages.contains(pkg), hidden.contains(pkg), added.contains(pkg), removed.contains(pkg))) continue;
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             Cards.Card card = cardByPkg.get(pkg);
@@ -308,7 +313,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return a.label.compareToIgnoreCase(b.label);
         });
         // Retain the optional Default-home tile until dependent tile-ordering work is merged.
-        if (showHomeSettings
+        if (showHomeSettings && !kidsMode
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
             fresh.add(new Entry(Entry.HOME_SETTINGS, ctx.getString(R.string.home_settings),
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
