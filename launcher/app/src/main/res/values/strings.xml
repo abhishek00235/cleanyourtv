@@ -19,6 +19,17 @@
     <string name="ethernet">Ethernet</string>
     <string name="offline">Offline</string>
     <string name="not_available">Not available on this TV</string>
+    <string name="carousel_permission_title">Show TV content</string>
+    <string name="carousel_permission_message">CleanYourTV can show continue-watching and suggested programs that apps publish to this TV. It cannot read private app histories. Program titles and artwork stay on this TV.</string>
+    <string name="carousel_permission_continue">Continue</string>
+    <string name="carousel_permission_cancel">Not now</string>
+    <string name="carousel_heading_continue">Continue watching · %1$s</string>
+    <string name="carousel_heading_suggestions">Suggestions · %1$s</string>
+    <string name="carousel_badge_continue">CONTINUE</string>
+    <string name="carousel_badge_next">UP NEXT</string>
+    <string name="carousel_badge_saved">SAVED</string>
+    <string name="carousel_badge_suggested">SUGGESTED</string>
+    <string name="carousel_resume_progress">%1$d%% watched</string>
     <string name="cant_open">Can\'t open %1$s</string>
     <string name="date_format">EEEE  d MMMM</string>
     <!-- Date next to the clock on Home; a locale can split it over two lines with \n. -->

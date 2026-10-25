@@ -15,6 +15,7 @@
     "dock_opacity":  48,
     "cinematic_scrim":  30,
     "dock_glass":  true,
+    "content_carousel":  true,
     "cinematic_home":  true,
     "always_show_names":  false,
     "wallpaper":  true,

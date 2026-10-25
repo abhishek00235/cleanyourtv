@@ -146,6 +146,45 @@
             android:visibility="gone" />
     </LinearLayout>
 
+    <!-- Optional, local TV-provider carousel. It occupies the wallpaper's open centre while the date,
+         top capsules and dock stay in the foreground. Only app-published Watch Next/preview rows appear. -->
+    <LinearLayout
+        android:id="@+id/contentCarousel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="56dp"
+        android:layout_marginTop="118dp"
+        android:layout_marginEnd="56dp"
+        android:layout_marginBottom="156dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:importantForAccessibility="auto">
+
+        <TextView
+            android:id="@+id/contentCarouselHeading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="12dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="#D9FFFFFF"
+            android:textSize="13sp"
+            android:letterSpacing="0.12"
+            android:fontFamily="@string/font_medium" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/contentCarouselItems"
+            android:layout_width="match_parent"
+            android:layout_height="152dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:scrollbars="none"
+            android:descendantFocusability="afterDescendants" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

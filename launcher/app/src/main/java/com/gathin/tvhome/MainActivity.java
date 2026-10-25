@@ -99,6 +99,7 @@ import java.util.Set;
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private static final int LAUNCHER_SETTINGS_REQUEST = 42;
+    private static final int READ_TV_LISTINGS_REQUEST = 43;
     /** Sent by QuickSettingsActivity: open Launcher settings from here so Home rebuilds when they close. */
     static final String ACTION_LAUNCHER_SETTINGS = "com.gathin.tvhome.action.LAUNCHER_SETTINGS";
     /** The system input switcher, forwarded here by InputsRequestActivity while handle_view_inputs is on. */
@@ -139,6 +140,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean homeAppLibrary;
     private FrameLayout root;
     private WallpaperPlayer wallpaperPlayer;
+    private ContentCarousel contentCarousel;
+    private boolean contentCarouselEnabled;
+    private boolean contentPermissionPromptShown;
+    private String pendingCarouselPackage;
+    private String pendingCarouselLabel;
     private GlassView glass;
     private View ambient;
     private TextView heroName;
@@ -403,6 +409,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        contentCarouselEnabled = cfg.contentCarousel && cfg.dockRow;
+        contentCarousel = new ContentCarousel(this, findViewById(R.id.contentCarousel),
+                findViewById(R.id.contentCarouselHeading), findViewById(R.id.contentCarouselItems),
+                () -> root.post(() -> focusTile(lastFocused)));
+        if (!contentCarouselEnabled) contentCarousel.hide();
         if (kidsMode) {
             File wallpaper = KidsMode.wallpaperFile(this);
             if (wallpaper != null && wallpaper.isFile()) {
@@ -1032,6 +1043,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        if (contentCarousel != null) contentCarousel.hide();
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
@@ -1095,6 +1107,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         dismissCapsuleTooltip();
+        if (contentCarousel != null) contentCarousel.close();
         super.onDestroy();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
@@ -1496,6 +1509,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
+        if (contentCarouselEnabled) requestContentCarousel(adapter.packageAt(position), adapter.labelAt(position));
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
         if (card.getWidth() == 0) {
@@ -1571,6 +1585,61 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Scroll just enough so the whole glass (not only the tile) is visible.
             revealRect.set(0, -(int) pad * 2, item.getWidth(), item.getHeight() + (int) pad);
             grid.requestChildRectangleOnScreen(item, revealRect, reducedMotion);
+        }
+    }
+
+    @Override
+    public void onTileFocusLost(int position, View card) {
+        if (!contentCarouselEnabled) return;
+        root.post(() -> {
+            View focused = getCurrentFocus();
+            if (contentCarousel.containsFocus(focused) || isDescendantOf(focused, grid)) return;
+            contentCarousel.hide();
+        });
+    }
+
+    private static boolean isDescendantOf(View child, View parent) {
+        View current = child;
+        while (current != null) {
+            if (current == parent) return true;
+            if (!(current.getParent() instanceof View)) return false;
+            current = (View) current.getParent();
+        }
+        return false;
+    }
+
+    private void requestContentCarousel(String packageName, String label) {
+        if (packageName == null || packageName.isEmpty() || getPackageName().equals(packageName)
+                || label == null || label.isEmpty()) {
+            contentCarousel.hide();
+            return;
+        }
+        if (checkSelfPermission("android.permission.READ_TV_LISTINGS") == PackageManager.PERMISSION_GRANTED) {
+            contentCarousel.showForPackage(packageName, label);
+            return;
+        }
+        pendingCarouselPackage = packageName;
+        pendingCarouselLabel = label;
+        if (contentPermissionPromptShown) return;
+        contentPermissionPromptShown = true;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.carousel_permission_title)
+                .setMessage(R.string.carousel_permission_message)
+                .setNegativeButton(R.string.carousel_permission_cancel, (dialog, which) -> contentCarousel.hide())
+                .setPositiveButton(R.string.carousel_permission_continue, (dialog, which) ->
+                        requestPermissions(new String[]{"android.permission.READ_TV_LISTINGS"}, READ_TV_LISTINGS_REQUEST))
+                .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != READ_TV_LISTINGS_REQUEST) return;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && pendingCarouselPackage != null) {
+            contentCarousel.showForPackage(pendingCarouselPackage, pendingCarouselLabel);
+        } else {
+            contentCarousel.hide();
         }
     }
 
@@ -2136,6 +2205,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public boolean onTileVerticalKey(int position, int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && contentCarouselEnabled && contentCarousel.hasPrograms()) {
+            if (contentCarousel.focusFirst()) {
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+                return true;
+            }
+        }
         int count = adapter.appCount();
         int target;
         // Horizontal: swallow the key at a row's ends so focus never wraps to the next row or
@@ -2171,6 +2246,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override public void onLibraryFocused() {
         libraryFocusPending = false;
+        if (contentCarousel != null) contentCarousel.hide();
         hideGlass();
         hideHero();
     }
